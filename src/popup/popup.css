@@ -1,0 +1,9 @@
+:root { color-scheme: light; font-family: system-ui, sans-serif; }
+body { width: 320px; margin: 0; background: #f8f9fa; color: #1f2937; }
+main { display: grid; gap: 10px; padding: 16px; }
+h1 { margin: 0; font-size: 18px; }
+p, label { margin: 0; font-size: 13px; line-height: 1.45; }
+button { border: 0; border-radius: 6px; padding: 9px 12px; background: #03c75a; color: white; cursor: pointer; }
+button:disabled { background: #9ca3af; cursor: not-allowed; }
+textarea { resize: vertical; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; }
+

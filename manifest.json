@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Naver Blog Assistant",
+  "version": "0.1.0",
+  "description": "Create reader-reviewed comment drafts from Naver Blog posts.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_title": "Naver Blog Assistant",
+    "default_popup": "src/popup/popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://blog.naver.com/*", "https://m.blog.naver.com/*"],
+      "js": ["src/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
+
