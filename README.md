@@ -7,9 +7,12 @@ Chrome extension (Manifest V3) that helps a reader summarize a Naver Blog post a
 - Extract text from the page currently open in Naver Blog.
 - Use OpenAI's Responses API through a local companion service to create editable, context-aware comment drafts.
 - Present drafts for the reader to review and copy.
+- Record posts locally only after the reader has manually registered a comment, to flag already-processed posts.
 - Keep liking and publishing comments as explicit, manual user actions.
 
 The extension does not automatically browse posts, press Like, submit comments, or include promotional boilerplate.
+
+Processing history is stored in Chrome's local extension storage. It stays on the current browser profile and is not sent to the local service or OpenAI.
 
 ## OpenAI setup
 

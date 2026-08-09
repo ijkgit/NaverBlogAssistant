@@ -24,6 +24,7 @@
 
     sendResponse({
       title: document.title,
+      url: location.href,
       text: getPostText()
     });
   });
