@@ -1,26 +1,30 @@
-const CONTENT_SELECTORS = [
-  '.se-main-container',
-  '#postViewArea',
-  '.post-view',
-  'article'
-];
+(() => {
+  if (globalThis.naverBlogAssistantContentLoaded) return;
+  globalThis.naverBlogAssistantContentLoaded = true;
 
-function getPostText() {
-  const element = CONTENT_SELECTORS
-    .map((selector) => document.querySelector(selector))
-    .find(Boolean);
+  const CONTENT_SELECTORS = [
+    '.se-main-container',
+    '#postViewArea',
+    '.post-view',
+    'article'
+  ];
 
-  return (element?.innerText || document.body.innerText || '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+  function getPostText() {
+    const element = CONTENT_SELECTORS
+      .map((selector) => document.querySelector(selector))
+      .find(Boolean);
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type !== 'GET_POST_TEXT') return;
+    return (element?.innerText || document.body.innerText || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
 
-  sendResponse({
-    title: document.title,
-    text: getPostText()
+  chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.type !== 'GET_POST_TEXT') return;
+
+    sendResponse({
+      title: document.title,
+      text: getPostText()
+    });
   });
-});
-
+})();

@@ -16,17 +16,46 @@ async function requestDrafts(text, title) {
   return payload.drafts;
 }
 
+function isNaverBlogUrl(url) {
+  try {
+    const hostname = new URL(url).hostname;
+    return hostname === 'blog.naver.com' || hostname === 'm.blog.naver.com';
+  } catch {
+    return false;
+  }
+}
+
+async function getPostContent(tabId) {
+  await chrome.scripting.executeScript({
+    target: { tabId, allFrames: true },
+    files: ['src/content.js']
+  });
+
+  const frames = await chrome.webNavigation.getAllFrames({ tabId });
+  const results = await Promise.all((frames || []).map(async ({ frameId }) => {
+    try {
+      return await chrome.tabs.sendMessage(tabId, { type: 'GET_POST_TEXT' }, { frameId });
+    } catch {
+      return null;
+    }
+  }));
+
+  return results
+    .filter((result) => result?.text)
+    .sort((left, right) => right.text.length - left.text.length)[0];
+}
+
 createButton.addEventListener('click', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  if (!tab?.id || !tab.url?.includes('blog.naver.com')) {
+  if (!tab?.id || !isNaverBlogUrl(tab.url)) {
     statusElement.textContent = '네이버 블로그 글 페이지에서 실행해 주세요.';
     return;
   }
 
   statusElement.textContent = '글을 읽는 중입니다…';
   try {
-    const result = await chrome.tabs.sendMessage(tab.id, { type: 'GET_POST_TEXT' });
+    const result = await getPostContent(tab.id);
     if (!result?.text) throw new Error('본문을 찾지 못했습니다.');
 
     const drafts = await requestDrafts(result.text, result.title);

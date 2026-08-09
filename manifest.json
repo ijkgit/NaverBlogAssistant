@@ -3,7 +3,7 @@
   "name": "Naver Blog Assistant",
   "version": "0.1.0",
   "description": "Create reader-reviewed comment drafts from Naver Blog posts.",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "webNavigation"],
   "host_permissions": ["http://127.0.0.1:8765/*"],
   "action": {
     "default_title": "Naver Blog Assistant",
