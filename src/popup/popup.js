@@ -2,10 +2,18 @@ const statusElement = document.querySelector('#status');
 const draftElement = document.querySelector('#draft');
 const createButton = document.querySelector('#create-draft');
 const copyButton = document.querySelector('#copy-draft');
+const LOCAL_API_URL = 'http://127.0.0.1:8765/draft';
 
-function buildDraft(text) {
-  const excerpt = text.slice(0, 100).replace(/\s+/g, ' ').trim();
-  return `글 잘 읽었습니다. ${excerpt ? `특히 “${excerpt}” 부분이 인상 깊었어요. ` : ''}공유해 주신 내용 덕분에 생각해 볼 계기가 되었습니다.`;
+async function requestDrafts(text, title) {
+  const response = await fetch(LOCAL_API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, title })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || 'AI 초안을 만들지 못했습니다.');
+  return payload.drafts;
 }
 
 createButton.addEventListener('click', async () => {
@@ -21,11 +29,16 @@ createButton.addEventListener('click', async () => {
     const result = await chrome.tabs.sendMessage(tab.id, { type: 'GET_POST_TEXT' });
     if (!result?.text) throw new Error('본문을 찾지 못했습니다.');
 
-    draftElement.value = buildDraft(result.text);
+    const drafts = await requestDrafts(result.text, result.title);
+    if (!Array.isArray(drafts) || drafts.length === 0) {
+      throw new Error('AI가 사용할 수 있는 초안을 반환하지 않았습니다.');
+    }
+
+    draftElement.value = drafts.map((draft, index) => `${index + 1}. ${draft}`).join('\n\n');
     copyButton.disabled = false;
-    statusElement.textContent = '초안을 확인하고 필요한 내용을 고쳐 주세요.';
+    statusElement.textContent = 'AI 초안을 확인하고 맥락에 맞게 고쳐 주세요.';
   } catch (error) {
-    statusElement.textContent = error.message || '본문을 읽지 못했습니다.';
+    statusElement.textContent = error.message || '본문을 읽거나 AI 초안을 만들지 못했습니다.';
   }
 });
 
