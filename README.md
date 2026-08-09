@@ -1,51 +1,76 @@
-# Naver Blog Assistant
+# Naver Blog Assistant v0.3
 
-Chrome extension (Manifest V3) that helps a reader summarize a Naver Blog post and prepare a thoughtful comment draft.
+네이버 블로그 글을 읽고 로컬 Ollama로 댓글을 만든 다음, 네이버 블로그 댓글 영역을 자동으로 찾아 열고 댓글을 입력한 뒤 등록까지 수행합니다.
 
-## Scope
+## 변경점
 
-- Extract text from the page currently open in Naver Blog.
-- Use a local Ollama model through a local companion service to create editable, context-aware comment drafts.
-- Present drafts for the reader to review and copy.
-- Record posts locally only after the reader has manually registered a comment, to flag already-processed posts.
-- Keep liking and publishing comments as explicit, manual user actions.
+- 댓글 입력창을 사용자가 먼저 열 필요가 없습니다.
+- 페이지를 아래쪽으로 자동 스크롤해 댓글 모듈을 lazy-load 시도합니다.
+- `댓글`, `댓글 N`, `댓글 쓰기` 등의 버튼을 찾아 자동 클릭합니다.
+- Naver CBox의 `.u_cbox_text` 계열 입력창을 우선 탐색합니다.
+- 댓글을 입력한 뒤 `.u_cbox_btn_upload` 또는 주변의 `등록` 버튼을 찾아 한 번만 클릭합니다.
+- 성공적으로 등록되면 해당 글을 자동으로 완료 처리합니다.
+- 확장 프로그램 안에는 댓글 텍스트 박스를 두지 않습니다.
+- 댓글 앞에 `1.` 같은 리스트 번호를 붙이지 않습니다.
 
-The extension does not automatically browse posts, press Like, submit comments, or include promotional boilerplate.
+## 주의
 
-Processing history is stored in Chrome's local extension storage. It stays on the current browser profile and is not sent to the local service or OpenAI.
+이 버전은 실제 네이버 댓글 등록까지 자동으로 수행합니다. 네이버의 로그인 상태, 댓글 허용 여부, 보안/자동화 제한, 또는 네이버 UI 변경에 따라 등록이 실패할 수 있습니다. 댓글이 허용되지 않은 글에는 등록할 수 없습니다.
 
-## Ollama setup
+## 설치
 
-The extension and companion service run entirely on the local machine. No API key, billing account, or cloud API is required.
+1. `chrome://extensions/` 접속
+2. 개발자 모드 켜기
+3. 기존 확장 프로그램을 제거하거나 새 버전으로 교체
+4. 압축 해제한 프로젝트 폴더를 `압축해제된 확장 프로그램을 로드`로 불러오기
+5. 네이버 블로그 글 새로고침
+6. 확장 프로그램에서 `AI 댓글 작성` 클릭
 
-1. Install [Ollama](https://ollama.com/download).
-2. Download the default model once:
+댓글 영역을 직접 열지 않아도 됩니다.
 
-   ```powershell
-   ollama pull qwen3:4b
-   ```
 
-3. Start the companion service:
+## 좋아요 기능
 
-   ```powershell
-   python server/app.py
-   ```
+팝업의 `좋아요 누르기` 버튼을 사용하면 현재 네이버 블로그 글에서
+공감(좋아요) 버튼을 자동으로 찾아 클릭합니다.
 
-   To use another locally installed model, set `OLLAMA_MODEL` before starting it. The default is `qwen3:4b`.
-4. Keep that PowerShell window open, then load the extension as described below.
+- 댓글 영역을 먼저 열 필요가 없습니다.
+- 글 하단의 공감 버튼을 자동으로 찾습니다.
+- 이미 공감한 상태로 확인되는 경우 다시 클릭하지 않습니다.
+- 공감 상태를 즉시 확인할 수 없는 네이버 UI에서는 중복 클릭을 피하기 위해 한 번만 클릭합니다.
+- 좋아요 기능은 현재 `AI 댓글 작성`과 별도로 실행됩니다.
 
-The companion service calls Ollama at `http://127.0.0.1:11434` by default. Set `OLLAMA_API_URL` only if the Ollama API uses a different local address.
+테스트가 끝난 후 다음 단계에서 `좋아요 → 댓글 생성 → 댓글 등록`을 하나의 작업으로 묶을 수 있습니다.
 
-## Development
 
-1. Open `chrome://extensions` in Chrome.
-2. Enable **Developer mode**.
-3. Choose **Load unpacked** and select this repository folder.
-4. Open a Naver Blog post, then open the extension popup.
+### 좋아요 테스트 권장
 
-## Structure
+네이버 블로그의 글 페이지에서 `좋아요 누르기`를 누르면:
 
-- `manifest.json`: extension configuration
-- `src/content.js`: extracts readable page text on demand
-- `src/popup/`: popup interface and draft generation logic
-- `server/app.py`: local Ollama proxy; it keeps generation on the current PC
+1. 글 하단으로 자동 이동
+2. LikeIt의 `data-type="like"` 버튼 탐색
+3. 이미 좋아요 상태이면 다시 누르지 않음
+4. 아직 좋아요 상태(`off`)이면 한 번 클릭
+5. 상태를 안전하게 확인할 수 없으면 중복 클릭을 방지하기 위해 클릭하지 않음
+
+네이버 블로그 공감은 현재 여러 감정 종류를 제공하므로, 이번 테스트에서는
+다른 감정이나 댓글 반응을 건드리지 않고 `data-type="like"`인 좋아요만 대상으로 합니다.
+
+
+## v0.5.1 좋아요 수정
+
+네이버 블로그의 기본 하트 공감 요소인 `span.u_likeit_icon.__reaction__zeroface`를 직접 클릭합니다. 일반 공감 버튼을 먼저 눌러 선택 메뉴를 여는 방식은 사용하지 않습니다.
+
+
+## 0.5.2 좋아요 수정
+현재 네이버 블로그 UI의 `span.u_likeit_icon.__reaction__zeroface`를 직접 찾아 클릭하도록 수정했습니다. 공감 선택 메뉴를 먼저 열지 않습니다.
+
+
+## v0.5.3 좋아요 탐색 수정
+
+현재 네이버 블로그 LikeIt DOM에서 확인된
+`span.u_likeit_icon.__reaction__zeroface`를 직접 찾습니다.
+
+아이콘 자체의 크기가 0으로 계산되는 레이아웃에서도 부모 버튼을 확인해
+유효한 대상이면 클릭할 수 있도록 처리했습니다. 공감 선택 메뉴를 여는
+상위 버튼은 기본 좋아요 작업에서 클릭하지 않습니다.

@@ -1,18 +1,39 @@
 {
   "manifest_version": 3,
   "name": "Naver Blog Assistant",
-  "version": "0.1.0",
-  "description": "Create reader-reviewed comment drafts from Naver Blog posts.",
-  "permissions": ["activeTab", "scripting", "storage", "webNavigation"],
-  "host_permissions": ["http://127.0.0.1:8765/*"],
+  "version": "0.5.4",
+  "description": "Create local AI comments, automatically open/submit Naver Blog comments, and press the Naver Blog default heart like reaction.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8765/*",
+    "https://blog.naver.com/*",
+    "https://m.blog.naver.com/*",
+    "https://*.commentbox.naver.com/*",
+    "https://*.comment.naver.com/*",
+    "https://*.apis.naver.com/*"
+  ],
   "action": {
     "default_title": "Naver Blog Assistant",
     "default_popup": "src/popup/popup.html"
   },
   "content_scripts": [
     {
-      "matches": ["https://blog.naver.com/*", "https://m.blog.naver.com/*"],
-      "js": ["src/content.js"],
+      "matches": [
+        "https://blog.naver.com/*",
+        "https://m.blog.naver.com/*",
+        "https://*.commentbox.naver.com/*",
+        "https://*.comment.naver.com/*",
+        "https://*.apis.naver.com/*"
+      ],
+      "js": [
+        "src/content.js"
+      ],
+      "all_frames": true,
       "run_at": "document_idle"
     }
   ]
