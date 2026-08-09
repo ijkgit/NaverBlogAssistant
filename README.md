@@ -5,7 +5,7 @@ Chrome extension (Manifest V3) that helps a reader summarize a Naver Blog post a
 ## Scope
 
 - Extract text from the page currently open in Naver Blog.
-- Use OpenAI's Responses API through a local companion service to create editable, context-aware comment drafts.
+- Use a local Ollama model through a local companion service to create editable, context-aware comment drafts.
 - Present drafts for the reader to review and copy.
 - Record posts locally only after the reader has manually registered a comment, to flag already-processed posts.
 - Keep liking and publishing comments as explicit, manual user actions.
@@ -14,22 +14,27 @@ The extension does not automatically browse posts, press Like, submit comments, 
 
 Processing history is stored in Chrome's local extension storage. It stays on the current browser profile and is not sent to the local service or OpenAI.
 
-## OpenAI setup
+## Ollama setup
 
-The API key is intentionally kept out of the extension and repository. OpenAI API keys must not be exposed in browser-side code, so the included local service reads `OPENAI_API_KEY` from its own process environment and listens only on `127.0.0.1`.
+The extension and companion service run entirely on the local machine. No API key, billing account, or cloud API is required.
 
-1. Create an OpenAI API key in the OpenAI Platform dashboard.
-2. In PowerShell, start the local service with the key in the current shell session:
+1. Install [Ollama](https://ollama.com/download).
+2. Download the default model once:
 
    ```powershell
-   $env:OPENAI_API_KEY = "your_api_key"
+   ollama pull qwen3:4b
+   ```
+
+3. Start the companion service:
+
+   ```powershell
    python server/app.py
    ```
 
-   To override the default model, set `OPENAI_MODEL` before starting it. The default is `gpt-5-mini`.
-3. Keep that PowerShell window open, then load the extension as described below.
+   To use another locally installed model, set `OLLAMA_MODEL` before starting it. The default is `qwen3:4b`.
+4. Keep that PowerShell window open, then load the extension as described below.
 
-Never add an API key to `manifest.json`, JavaScript files, `.env`, or Git.
+The companion service calls Ollama at `http://127.0.0.1:11434` by default. Set `OLLAMA_API_URL` only if the Ollama API uses a different local address.
 
 ## Development
 
@@ -43,4 +48,4 @@ Never add an API key to `manifest.json`, JavaScript files, `.env`, or Git.
 - `manifest.json`: extension configuration
 - `src/content.js`: extracts readable page text on demand
 - `src/popup/`: popup interface and draft generation logic
-- `server/app.py`: local OpenAI API proxy; it keeps the API key outside Chrome
+- `server/app.py`: local Ollama proxy; it keeps generation on the current PC

@@ -1,8 +1,4 @@
-"""Local-only proxy for Naver Blog Assistant's OpenAI requests.
-
-Set OPENAI_API_KEY before starting this process. The key never enters the
-extension, page, or repository.
-"""
+"""Local-only proxy for Naver Blog Assistant's Ollama requests."""
 
 import json
 import os
@@ -14,25 +10,11 @@ from urllib.request import Request, urlopen
 HOST = "127.0.0.1"
 PORT = 8765
 MAX_POST_CHARACTERS = 12000
-OPENAI_API_URL = "https://api.openai.com/v1/responses"
-MODEL = os.environ.get("OPENAI_MODEL", "gpt-5-mini")
-
-
-def extract_output_text(response):
-    """Return every output_text part from a Responses API payload."""
-    parts = []
-    for item in response.get("output", []):
-        for content in item.get("content", []):
-            if content.get("type") == "output_text":
-                parts.append(content.get("text", ""))
-    return "\n".join(parts).strip()
+OLLAMA_API_URL = os.environ.get("OLLAMA_API_URL", "http://127.0.0.1:11434/api/generate")
+MODEL = os.environ.get("OLLAMA_MODEL", "qwen3:4b")
 
 
 def make_drafts(title, text):
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY가 설정되지 않았습니다. 서버를 환경 변수와 함께 다시 시작하세요.")
-
     prompt = f"""다음 네이버 블로그 글을 읽고, 글쓴이에게 남길 자연스러운 한국어 댓글 초안 2개를 작성하세요.
 
 규칙:
@@ -45,19 +27,21 @@ def make_drafts(title, text):
 글 제목: {title[:300]}
 글 본문:
 {text[:MAX_POST_CHARACTERS]}"""
-    request_body = json.dumps(
-        {
-            "model": MODEL,
-            "input": prompt,
-            "store": False,
-        }
-    ).encode("utf-8")
+    request_body = json.dumps({
+        "model": MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "think": False,
+        "options": {
+            "temperature": 0.7,
+            "num_predict": 300,
+        },
+    }).encode("utf-8")
     request = Request(
-        OPENAI_API_URL,
+        OLLAMA_API_URL,
         data=request_body,
         method="POST",
         headers={
-            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         },
     )
@@ -66,14 +50,16 @@ def make_drafts(title, text):
             payload = json.loads(response.read().decode("utf-8"))
     except HTTPError as error:
         details = error.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"OpenAI 요청이 실패했습니다 ({error.code}): {details}") from error
+        raise RuntimeError(f"Ollama 요청이 실패했습니다 ({error.code}): {details}") from error
     except URLError as error:
-        raise RuntimeError("OpenAI 서버에 연결하지 못했습니다. 네트워크를 확인하세요.") from error
+        raise RuntimeError(
+            "Ollama 서버에 연결하지 못했습니다. Ollama를 설치하고 모델을 내려받았는지 확인하세요."
+        ) from error
 
-    output = extract_output_text(payload)
+    output = str(payload.get("response", "")).strip()
     drafts = [line.strip() for line in output.split("\n\n") if line.strip()]
     if not drafts:
-        raise RuntimeError("OpenAI 응답에서 댓글 초안을 찾지 못했습니다.")
+        raise RuntimeError("Ollama 응답에서 댓글 초안을 찾지 못했습니다.")
     return drafts[:2]
 
 
